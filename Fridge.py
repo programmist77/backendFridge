@@ -1,75 +1,177 @@
-class door_status():
-    def __init__(self, status):
-        self.status = status
-        
-    def open_door(self):
-        if self.status == 1:
-            print("Дверь холодильника уже открыта")
-        elif self.status == 0:
-            print("Дверь холодильника была открыта успешно ")
-            self.status = 1
+from abc import ABC, abstractmethod
+from typing import List, Optional
 
-    def close_door(self):
-        if self.status == 1:
-            print("Дверь холодильника была закрыта успешно")
-            self.status = 0
-        elif self.status == 0:
-            print("Дверь холодильника уже закрыта")
+class IDoor(ABC):
+    @abstractmethod
+    def open(self) -> None:
+        pass
     
-    def door_status(self):
-        if self.status == 1:
-            return "Дверь холодильника открыта";
-        elif self.status == 0:
-            return "Дверь холодильника закрыта";
+    @abstractmethod
+    def close(self) -> None:
+        pass
+    
+    @abstractmethod
+    def get_status(self) -> str:
+        pass
 
-class put_products():
+class IStorage(ABC):
+    @abstractmethod
+    def put_product(self, product: str) -> None:
+        pass
+    
+    @abstractmethod
+    def get_products(self) -> List[str]:
+        pass
+
+class ITemperatureController(ABC):
+    @abstractmethod
+    def set_temperature(self, temp: int) -> None:
+        pass
+    
+    @abstractmethod
+    def get_temperature(self) -> str:
+        pass
+
+class Door(IDoor):
+    def __init__(self, status: int = 0):
+        self._status = status
+    
+    def open(self) -> None:
+        if self._status == 1:
+            print("Дверь холодильника уже открыта")
+        else:
+            print("Дверь холодильника была открыта успешно")
+            self._status = 1
+    
+    def close(self) -> None:
+        if self._status == 0:
+            print("Дверь холодильника уже закрыта")
+        else:
+            print("Дверь холодильника была закрыта успешно")
+            self._status = 0
+    
+    def get_status(self) -> str:
+        return "Дверь холодильника открыта" if self._status == 1 else "Дверь холодильника закрыта"
+
+class ProductStorage(IStorage):
     def __init__(self):
-        self.products = []
+        self._products: List[str] = []
+    
+    def put_product(self, product: str) -> None:
+        self._products.append(product)
+        print(f"Продукт '{product}' был успешно помещен в холодильник")
+    
+    def get_products(self) -> List[str]:
+        return self._products.copy()
 
-    def put_product(self, product):
-        self.products.append(product)
-        print(f"Продукт {product} был успешно помещен в холодильник")
 
-    def get_products(self):
-        return self.products
+class TemperatureController(ITemperatureController):
+    MIN_TEMP = 0
+    MAX_TEMP = 12
+    
+    def __init__(self, initial_temp: int = 4):
+        self._temperature = initial_temp
+    
+    def set_temperature(self, temp: int) -> None:
+        if self.MIN_TEMP <= temp <= self.MAX_TEMP:
+            self._temperature = temp
+            print(f"В холодильнике установлена новая температура: {temp}°C")
+        else:
+            print(f"Неверная температура. Допустимый диапазон: {self.MIN_TEMP}-{self.MAX_TEMP}°C")
+    
+    def get_temperature(self) -> str:
+        return f"{self._temperature}°C"
 
-class cold_temp():
-    def __init__(self, new_temp):
-        self.temperature = new_temp
+class SmartDoor(Door):
+    def open(self) -> None:
+        super().open()
+        if self._status == 1:
+            print("Включена подсветка холодильника")
+    
+    def close(self) -> None:
+        super().close()
+        if self._status == 0:
+            print("Подсветка выключена")
 
-    def InstallTemp(self, temp):
-        if 0 <= temp <= 12:
-            self.temperature = temp
-            print(f"В холодильнике установлена новая температура {temp}")
-        else: 
-            print("В холодильник не может быть установлена данная температура. Пожалуйста, укажите в диапозоне от 0 до 12")
 
-    def get_temperature(self):
-        return f"{self.temperature}℃"
+class FreezerTemperatureController(TemperatureController):
+    MIN_TEMP = -25
+    MAX_TEMP = -15
+    
+    def __init__(self, initial_temp: int = -18):
+        super().__init__(initial_temp)
 
-class cold_info():
-    def __init__(self):
-        self.door = door_status(status=0)
-        self.temperature = cold_temp(new_temp=4)
-        self.products = put_products()
 
-    def show_info(self):
-        print("\nИНФОРМАЦИЯ О ХОЛОДИЛЬНИКЕ")
-        print(f"{self.door.door_status()}")
-        print(f"Температура: {self.temperature.get_temperature()}")
-        print(f"Продукты внутри: {self.products.get_products()}")
+class Refrigerator:
+    def __init__(self, 
+                 door: Optional[IDoor] = None,
+                 storage: Optional[IStorage] = None,
+                 temp_controller: Optional[ITemperatureController] = None):
+        self._door = door or Door()
+        self._storage = storage or ProductStorage()
+        self._temp_controller = temp_controller or TemperatureController()
+    
+    def show_info(self) -> None:
+        """Показывает информацию о состоянии холодильника"""
+        print("\n" + "="*40)
+        print("ИНФОРМАЦИЯ О ХОЛОДИЛЬНИКЕ")
+        print("="*40)
+        print(f"Состояние: {self._door.get_status()}")
+        print(f"Температура: {self._temp_controller.get_temperature()}")
+        products = self._storage.get_products()
+        print(f"Продукты ({len(products)}): {', '.join(products) if products else 'холодильник пуст'}")
+        print("="*40)
 
-def UseCold():
-    my_fridge = cold_info()
-    my_fridge.show_info()
+    @property
+    def door(self) -> IDoor:
+        return self._door
+    
+    @property
+    def storage(self) -> IStorage:
+        return self._storage
+    
+    @property
+    def temperature_controller(self) -> ITemperatureController:
+        return self._temp_controller
 
-    my_fridge.door.open_door()
-    my_fridge.products.put_product("Яблоко")
-    my_fridge.door.close_door()
-    my_fridge.temperature.InstallTemp(8)
+class RefrigeratorFactory:
+    @staticmethod
+    def create_standard() -> Refrigerator:
+        return Refrigerator()
+    
+    @staticmethod
+    def create_smart() -> Refrigerator:
+        return Refrigerator(door=SmartDoor())
+    
+    @staticmethod
+    def create_two_chamber() -> Refrigerator:
+        return Refrigerator(
+            door=SmartDoor(),
+            temp_controller=FreezerTemperatureController()
+        )
 
-    my_fridge.show_info()
+def demonstrate_refrigerators():
+    print("=== СТАНДАРТНЫЙ ХОЛОДИЛЬНИК ===")
+    fridge1 = RefrigeratorFactory.create_standard()
+
+    fridge1.show_info()
+    fridge1.door.open()
+    fridge1.storage.put_product("Молоко")
+    fridge1.storage.put_product("Яйца")
+    fridge1.door.close()
+    fridge1.temperature_controller.set_temperature(5)
+    fridge1.show_info()
+    
+    print("\n=== УМНЫЙ ХОЛОДИЛЬНИК ===")
+    fridge2 = RefrigeratorFactory.create_smart()
+    fridge2.door.open()
+    fridge2.door.close()
+    
+    print("\n=== ДВУХКАМЕРНЫЙ ХОЛОДИЛЬНИК ===")
+    fridge3 = RefrigeratorFactory.create_two_chamber()
+    fridge3.temperature_controller.set_temperature(-20)
+    fridge3.show_info()
+
 
 if __name__ == "__main__":
-    UseCold()
-
+    demonstrate_refrigerators()
