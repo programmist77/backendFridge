@@ -112,7 +112,6 @@ class Refrigerator:
         self._temp_controller = temp_controller or TemperatureController()
     
     def show_info(self) -> None:
-        """Показывает информацию о состоянии холодильника"""
         print("\n" + "="*40)
         print("ИНФОРМАЦИЯ О ХОЛОДИЛЬНИКЕ")
         print("="*40)
@@ -175,3 +174,4 @@ def demonstrate_refrigerators():
 
 if __name__ == "__main__":
     demonstrate_refrigerators()
+
