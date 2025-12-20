@@ -160,11 +160,13 @@ def demonstrate_refrigerators():
     fridge1.storage.put_product("Яйца")
     fridge1.storage.put_product("Сыр")
     try:
+        # попытка добавить несуществующий продукт(неккоректное значение)
         fridge1.storage.put_product("")  
     except ValueError:
         pass
     
     try:
+        # попытка добавить некорректный продукт(число)
         fridge1.storage.put_product(123) 
     except TypeError:
         pass
