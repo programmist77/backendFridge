@@ -58,8 +58,22 @@ class ProductStorage(IStorage):
         self._products: List[str] = []
     
     def put_product(self, product: str) -> None:
-        self._products.append(product)
-        print(f"Продукт '{product}' был успешно помещен в холодильник")
+        try:
+            if not isinstance(product, str):
+                raise TypeError(f"Ожидается строка, получен {type(product).__name__}")
+            
+            if not product.strip():
+                raise ValueError("Продукт не может быть пустой строкой")
+            
+            self._products.append(product)
+            print(f"Продукт '{product}' был успешно помещен в холодильник")
+            
+        except TypeError as e:
+            print(f"Ошибка типа: {e}")
+            raise
+        except ValueError as e:
+            print(f"Ошибка значения: {e}")
+            raise
     
     def get_products(self) -> List[str]:
         return self._products.copy()
@@ -92,14 +106,6 @@ class SmartDoor(Door):
         super().close()
         if self._status == 0:
             print("Подсветка выключена")
-
-
-class FreezerTemperatureController(TemperatureController):
-    MIN_TEMP = -25
-    MAX_TEMP = -15
-    
-    def __init__(self, initial_temp: int = -18):
-        super().__init__(initial_temp)
 
 
 class Refrigerator:
@@ -141,13 +147,7 @@ class RefrigeratorFactory:
     @staticmethod
     def create_smart() -> Refrigerator:
         return Refrigerator(door=SmartDoor())
-    
-    @staticmethod
-    def create_two_chamber() -> Refrigerator:
-        return Refrigerator(
-            door=SmartDoor(),
-            temp_controller=FreezerTemperatureController()
-        )
+
 
 def demonstrate_refrigerators():
     print("=== СТАНДАРТНЫЙ ХОЛОДИЛЬНИК ===")
@@ -155,8 +155,25 @@ def demonstrate_refrigerators():
 
     fridge1.show_info()
     fridge1.door.open()
+    
     fridge1.storage.put_product("Молоко")
     fridge1.storage.put_product("Яйца")
+    fridge1.storage.put_product("Сыр")
+    try:
+        fridge1.storage.put_product("")  
+    except ValueError:
+        pass
+    
+    try:
+        fridge1.storage.put_product(123) 
+    except TypeError:
+        pass
+    
+    try:
+        fridge1.storage.put_product(None)  
+    except TypeError:
+        pass
+    
     fridge1.door.close()
     fridge1.temperature_controller.set_temperature(5)
     fridge1.show_info()
@@ -164,14 +181,11 @@ def demonstrate_refrigerators():
     print("\n=== УМНЫЙ ХОЛОДИЛЬНИК ===")
     fridge2 = RefrigeratorFactory.create_smart()
     fridge2.door.open()
+    fridge2.storage.put_product("Овощи")
+    fridge2.storage.put_product("Фрукты")
     fridge2.door.close()
-    
-    print("\n=== ДВУХКАМЕРНЫЙ ХОЛОДИЛЬНИК ===")
-    fridge3 = RefrigeratorFactory.create_two_chamber()
-    fridge3.temperature_controller.set_temperature(-20)
-    fridge3.show_info()
+    fridge2.show_info()
 
 
 if __name__ == "__main__":
     demonstrate_refrigerators()
-
